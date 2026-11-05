@@ -101,21 +101,40 @@ Sim.ui = (function () {
     const pal = Sim.render.paleta();
     const cont = $('bandos');
     cont.innerHTML = '';
-    estado.mapa.inicios.forEach(function (ini) {
-      const r = Sim.razas[ini.raza];
+    estado.bandos.forEach(function (b) {
+      const r = Sim.razas[b.raza];
       const caja = document.createElement('div');
       caja.className = 'bando';
       caja.innerHTML =
-        '<div class="bando-cabecera"><span style="color:' + pal.razas[ini.raza] + '">' + Sim.render.SIMBOLO_REY + '</span> ' +
-        r.nombre + ' <span class="tenue">· población 0</span></div>' +
-        '<div class="log"><div class="tenue">Aún no hay habitantes. Llegan en la Fase 2.</div></div>';
+        '<div class="bando-cabecera" title="Clic para ir a su salón"><span style="color:' + pal.razas[b.raza] + '">' + Sim.render.SIMBOLO_REY + '</span> ' +
+        r.nombre + ' <span class="tenue">· población <span class="bando-poblacion"></span></span></div>' +
+        '<div class="bando-miembros"></div>' +
+        '<div class="log"><div class="tenue">El log de sucesos llega en la Fase 5.</div></div>';
       caja.querySelector('.bando-cabecera').addEventListener('click', function () {
-        const C = Sim.config.mapa;
-        Sim.render.centrar(ini.x + C.anchoSalon / 2, ini.y + C.altoSalon / 2);
+        Sim.render.centrar(b.salon.x + b.salon.ancho / 2, b.salon.y + b.salon.alto / 2);
       });
-      caja.querySelector('.bando-cabecera').title = 'Clic para ir a su zona';
+      caja.querySelector('.bando-miembros').addEventListener('click', function (e) {
+        const a = e.target.closest('.enlace-persona');
+        if (a) { e.preventDefault(); Sim.fichas.abrir(+a.dataset.id); }
+      });
+      caja.dataset.bando = b.id;
       cont.appendChild(caja);
     });
+    actualizarBandos();
+  }
+  // Población y lista de miembros (clic en un nombre = abrir su ficha)
+  function actualizarBandos() {
+    const pal = Sim.render.paleta();
+    for (const caja of document.querySelectorAll('#bandos .bando')) {
+      const b = estado.bandos[+caja.dataset.bando];
+      const vivos = b.miembros.map((id) => estado.personajes[id]).filter(Boolean);
+      caja.querySelector('.bando-poblacion').textContent = vivos.length;
+      const html = vivos.map((p) => '<div><a href="#" class="enlace-persona" data-id="' + p.id + '" style="color:' + pal.razas[p.raza] + '">' +
+        Sim.render.SIMBOLO_PERSONA[p.rol] + ' ' + p.nombre + '</a> <span class="tenue">' + Sim.personajes.textoRol(p) + ' · ' +
+        Sim.ia.textoAccion(estado, p).toLowerCase() + '</span></div>').join('');
+      const lista = caja.querySelector('.bando-miembros');
+      if (lista.innerHTML !== html) lista.innerHTML = html;
+    }
   }
   function montarLeyenda() {
     const pal = Sim.render.paleta();
@@ -132,6 +151,9 @@ Sim.ui = (function () {
       [S[T.VADO], pal.terreno[T.VADO][est], 'Vado (se puede cruzar)'],
       [Sim.render.SIMBOLO_ANIMAL, pal.animal, 'Animales (zona de caza)'],
       [Sim.render.SIMBOLO_PLANO, '#888', 'Plano del salón del rey'],
+      [Sim.render.SIMBOLO_PERSONA.rey, '#ddd', 'Rey o reina (color de su raza)'],
+      [Sim.render.SIMBOLO_PERSONA.guardia, '#ddd', 'Guardia'],
+      [Sim.render.SIMBOLO_PERSONA.trabajador, '#ddd', 'Trabajador'],
     ];
     $('leyenda').innerHTML = filas.map((f) =>
       '<div><span class="ley-simbolo" style="color:' + f[1] + '">' + f[0] + '</span> ' + f[2] + '</div>').join('');
@@ -184,8 +206,15 @@ Sim.ui = (function () {
     // Mapa: arrastrar para mover, rueda para zoom, pasar el ratón para info
     const lienzo = $('lienzo');
     let arrastre = null;
-    lienzo.addEventListener('mousedown', function (e) { arrastre = { x: e.clientX, y: e.clientY }; lienzo.classList.add('arrastrando'); });
-    window.addEventListener('mouseup', function () { arrastre = null; lienzo.classList.remove('arrastrando'); });
+    let pulsado = null; // para distinguir un clic de un arrastre
+    lienzo.addEventListener('mousedown', function (e) {
+      arrastre = { x: e.clientX, y: e.clientY }; pulsado = { x: e.clientX, y: e.clientY };
+      lienzo.classList.add('arrastrando');
+    });
+    window.addEventListener('mouseup', function (e) {
+      if (pulsado && Math.abs(e.clientX - pulsado.x) + Math.abs(e.clientY - pulsado.y) < 5 && e.target === lienzo) clicEnMapa(e);
+      arrastre = null; pulsado = null; lienzo.classList.remove('arrastrando');
+    });
     window.addEventListener('mousemove', function (e) {
       if (arrastre) { Sim.render.mover(e.clientX - arrastre.x, e.clientY - arrastre.y); arrastre = { x: e.clientX, y: e.clientY }; }
     });
@@ -222,6 +251,20 @@ Sim.ui = (function () {
     conectarNuke();
   }
 
+  // Clic en el mapa: abre la ficha del personaje de esa casilla (o de una vecina)
+  function clicEnMapa(e) {
+    if (!estado) return;
+    const r = $('lienzo').getBoundingClientRect();
+    const c = Sim.render.pantallaACasilla(e.clientX - r.left, e.clientY - r.top);
+    let mejor = null, mejorD = 2;
+    for (const id in estado.personajes) {
+      const p = estado.personajes[id];
+      const d = Math.max(Math.abs(p.x - c.x), Math.abs(p.y - c.y));
+      if (d < mejorD) { mejor = p; mejorD = d; }
+    }
+    if (mejor) Sim.fichas.abrir(mejor.id);
+  }
+
   // "Nuke the map": hay que mantenerlo pulsado unos segundos
   function conectarNuke() {
     const b = $('nuke'), relleno = $('nuke-relleno');
@@ -247,5 +290,6 @@ Sim.ui = (function () {
     ponerEstado: ponerEstado,
     actualizar: actualizar,
     alCambiarEstacion: function () { montarLeyenda(); },
+    actualizarBandos: function () { if (estado) actualizarBandos(); },
   };
 })();

@@ -103,6 +103,8 @@ Aunque al principio pueda ser un solo archivo, el código debe estar **organizad
 | `ui` | Menú previo, ventanas flotantes, log, paneles |
 | `guardado` | Guardar/cargar partida |
 | `azar` | Generador de números aleatorios con semilla (lo usan todos los módulos) `[PROPUESTO]` |
+| `rutas` | Cálculo de caminos con A* y caché de rutas `[PROPUESTO]` |
+| `fichas` | Parte de `ui`: ventanas flotantes de personaje `[PROPUESTO]` |
 | `config` | Todos los valores numéricos ajustables `[PROPUESTO]` |
 
 Los módulos se cargan con etiquetas `<script>` normales (no módulos ES) y cuelgan de un objeto global `Sim`, para que el juego funcione abriendo `index.html` con doble clic, sin servidor `[PROPUESTO]`.
@@ -146,6 +148,8 @@ Los módulos se cargan con etiquetas `<script>` normales (no módulos ES) y cuel
 | Persona | `☺` (color por raza) |
 | Rey | `☻` |
 | Guardia / niño / animal | símbolos o letras distintos |
+| Guardia | `G` `[PROPUESTO]` |
+| Niño / bebé | `n` / `b` `[PROPUESTO]` |
 
 El color del símbolo se **apaga según los recursos restantes** del nodo y **cambia con la estación**.
 
@@ -217,6 +221,11 @@ En cada tick, el personaje:
 
 Dos trabajadores del mismo oficio no hacen siempre lo mismo, porque sus rasgos y su situación difieren.
 
+**Fase 2 (acciones disponibles)** `[PROPUESTO]`: comer, descansar, pasear, explorar, refugiarse (si baja la seguridad), holgazanear, charlar (mejora la relación de los dos), patrullar y vigilar al rey (guardias), despachar en el salón (rey) e ir a ver el sitio de su oficio (trabajadores; trabajar de verdad llega en la Fase 3). Se penalizan las acciones repetidas entre las 3 últimas para dar variedad. Todos los valores en `config`.
+- **Movimiento: 1 casilla por tick** `[CERRADO]` (decidido con el usuario; ajustable en `config`). A 8 direcciones, con coste por terreno (montaña y bosque más lentos, agua no se cruza salvo por vados).
+- **Comida en la Fase 2** `[CERRADO]` provisional: se come en el salón, con comida sin fin. En la Fase 3 se sustituye por el almacén real.
+- **Seguridad:** sube cerca del salón y de los guardias, baja lejos (más rápido para los cobardes) `[PROPUESTO]`.
+
 ### 7.3 Capa estratégica del rey `[PROPUESTO]`
 El rey (o su regente) decide en función de su **personalidad** y de la situación del bando:
 - Prioridades de oficio ("falta comida → más campesinos", "falta piedra → más mineros").
@@ -239,7 +248,7 @@ Los personajes guardan recuerdos ("vio morir a su hermano", "pacto roto") y rela
 
 ### 8.1 Reproducción `[CERRADO]`
 - **Solo hombre + mujer.** Todo personaje nacido tiene `madre_id` y `padre_id` existentes en el juego. Los 5 fundadores son la única excepción.
-- **Fundadores:** al menos 2 hombres y 2 mujeres entre los 5, para que el bando pueda reproducirse desde el inicio `[PROPUESTO]`.
+- **Fundadores:** al menos 2 hombres y 2 mujeres entre los 5, para que el bando pueda reproducirse desde el inicio `[PROPUESTO]`. Edad inicial: rey 25-45 años, resto 18-40; empiezan sin pareja; cada uno aprecia a otro fundador y puede no soportar a alguno `[PROPUESTO]`.
 - **Cortejo:** dos adultos libres, de distinto sexo, con relación positiva y un **hueco de población libre**. Si no hay hueco, el bando se plantea construir una casa.
 - **Anti-incesto:** no pueden emparejarse padres/hijos ni hermanos. Primos, sí `[PROPUESTO]`.
 - **Embarazo y crianza:** duran un tiempo (en años del juego) que frena el crecimiento `[PROPUESTO]`: embarazo ~1 año, tiempo mínimo entre hijos ~2 años (valores ajustables).
@@ -562,5 +571,6 @@ Todo lo marcado como `[PROPUESTO]` es ajustable. Los que más probablemente nece
 | 2026-11-05 | Versión inicial del documento a partir de la sesión de diseño: concepto, mapa, razas, personajes, IA, familia y sucesión, tiempo y estaciones, recursos y nodos, edificios, combate, raids, diplomacia, interfaz, menú, hoja de ruta e ideas futuras. |
 | 2026-11-05 | Fase 1 construida. Añadidos como `[PROPUESTO]`: módulos `azar` y `config`; carga con `<script>` normales y objeto global `Sim`; símbolos de vado, metal, oro y animales; velocidad de 0,2 s, botón "+1 tick" y espacio para pausar. Las zonas de inicio muestran el plano del salón y el rey como marcador hasta la Fase 2. |
 | 2026-11-05 | Corregido parpadeo del mapa: al mover el ratón cambiaba la altura de la barra de información, eso redimensionaba el lienzo y lo borraba. Ahora la barra tiene altura fija, el lienzo solo se redimensiona si cambia de verdad y la información solo se actualiza al cambiar de casilla. |
+| 2026-11-05 | Fase 2 construida: 5 fundadores por bando con nombres por raza, rasgos, gustos, necesidades, habilidades y cuerpo; IA que puntúa acciones; rutas A* con caché; fichas flotantes (varias a la vez, arrastrables). Decidido con el usuario: 1 casilla por tick y comida sin fin en el salón hasta la Fase 3. Añadidos como `[PROPUESTO]`: módulos `rutas` y `fichas`, lista de acciones de la Fase 2, símbolos `G`/`n`/`b`, edades de fundadores. El mapa ya solo redibuja las casillas que cambian en cada tick. |
 
 > **Al modificar el diseño:** edita la sección correspondiente, ajusta las etiquetas de estado y añade una fila aquí con la fecha y un resumen breve.

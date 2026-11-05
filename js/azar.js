@@ -14,20 +14,36 @@ Sim.azar = (function () {
   }
 
   // Crea un generador. Su estado es un número, así se puede guardar.
+  // Si se le pasa un objeto { estado: n } (guardado dentro de la partida), usa y actualiza ese objeto.
   function crear(semilla) {
-    const g = { estado: (typeof semilla === 'number' ? semilla : hashTexto(String(semilla))) >>> 0 };
+    const s = (semilla && typeof semilla === 'object') ? semilla
+      : { estado: (typeof semilla === 'number' ? semilla : hashTexto(String(semilla))) >>> 0 };
+    const g = {};
 
     // Número entre 0 (incluido) y 1 (excluido). Algoritmo mulberry32.
     g.num = function () {
-      g.estado = (g.estado + 0x6d2b79f5) >>> 0;
-      let t = g.estado;
+      s.estado = (s.estado + 0x6d2b79f5) >>> 0;
+      let t = s.estado;
       t = Math.imul(t ^ (t >>> 15), t | 1);
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
     g.entero = function (min, max) { return min + Math.floor(g.num() * (max - min + 1)); };
+    g.rango = function (par) { return g.entero(par[0], par[1]); };
     g.prob = function (p) { return g.num() < p; };
     g.elegir = function (lista) { return lista[Math.floor(g.num() * lista.length)]; };
+    // Elige una clave de un objeto { clave: peso }
+    g.ponderado = function (pesos) {
+      let total = 0;
+      for (const k in pesos) total += pesos[k];
+      let r = g.num() * total;
+      for (const k in pesos) { r -= pesos[k]; if (r < 0) return k; }
+      return Object.keys(pesos)[0];
+    };
+    g.barajar = function (lista) {
+      for (let i = lista.length - 1; i > 0; i--) { const j = Math.floor(g.num() * (i + 1)); const t = lista[i]; lista[i] = lista[j]; lista[j] = t; }
+      return lista;
+    };
     return g;
   }
 

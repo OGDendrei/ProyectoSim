@@ -32,10 +32,11 @@ Sim.motor = (function () {
     requestAnimationFrame(bucle);
   }
 
-  // Un tick de simulación. En la Fase 1 solo avanza el calendario.
+  // Un tick de simulación: avanza el calendario y cada personaje actúa una vez.
   function tick() {
     const antes = calendario();
     estado.tiempo.tick++;
+    Sim.ia.tick(estado, Sim.azar.crear(estado.azar));
     const despues = calendario();
     const cambio = { estacion: antes.estacion !== despues.estacion, ano: antes.ano !== despues.ano };
     for (const f of alTick) f(estado, cambio);

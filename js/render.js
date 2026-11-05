@@ -17,6 +17,9 @@ Sim.render = (function () {
   const SIMBOLO_ANIMAL = 'c';
   const SIMBOLO_REY = '☻';
   const SIMBOLO_PLANO = '░';
+  // Personajes según rol o etapa de vida [PROPUESTO]
+  const SIMBOLO_PERSONA = { rey: '☻', guardia: 'G', trabajador: '☺', nino: 'n', bebe: 'b' };
+  const PRIORIDAD = { rey: 3, guardia: 2, trabajador: 1 };
 
   // Paletas. Los terrenos tienen 4 colores: primavera, verano, otoño, invierno.
   // "agotado" es el color al que tiende el símbolo cuando el nodo se vacía.
@@ -87,11 +90,13 @@ Sim.render = (function () {
   let paleta = PALETAS.clasica;
   const camara = { x: 0, y: 0, zoom: 1 }; // x, y en casillas (esquina superior izquierda)
   let pendiente = false;
+  let planoPorCasilla = new Map();  // casilla → raza (borde del plano del salón)
+  let dibujados = new Map();        // casilla → clave de lo que se dibujó encima (personajes)
+  let marcados = new Set();         // ids de personajes con ficha abierta (se recuadran)
 
   function iniciar(canvas) {
     lienzo = canvas;
     ctx = canvas.getContext('2d');
-    // Si cambia el tamaño de la zona del mapa, se reajusta el lienzo
     // Si se redimensiona, se redibuja en el acto (sin esperar) para que no se vea el lienzo vacío
     new ResizeObserver(function () { if (ajustarTamano()) dibujar(); }).observe(canvas.parentElement);
   }
@@ -130,74 +135,132 @@ Sim.render = (function () {
     pedirDibujo();
   }
 
+  // Redibujo completo (cámara, paleta o estación). Para los personajes se usa actualizar().
   function pedirDibujo() {
     if (pendiente) return;
     pendiente = true;
     requestAnimationFrame(function () { pendiente = false; dibujar(); });
   }
 
+  function prepararPlanos() {
+    planoPorCasilla = new Map();
+    if (!estado) return;
+    for (const b of estado.bandos) {
+      const s = b.salon;
+      for (let y = s.y; y < s.y + s.alto; y++) for (let x = s.x; x < s.x + s.ancho; x++) {
+        const borde = y === s.y || y === s.y + s.alto - 1 || x === s.x || x === s.x + s.ancho - 1;
+        planoPorCasilla.set(y * estado.mapa.ancho + x, borde ? b.raza : '');
+      }
+    }
+  }
+
+  // Qué personaje se ve en cada casilla (el más importante si hay varios)
+  function personasPorCasilla() {
+    const res = new Map();
+    const W = estado.mapa.ancho;
+    for (const id in estado.personajes) {
+      const p = estado.personajes[id];
+      const i = p.y * W + p.x;
+      const previo = res.get(i);
+      if (!previo || (PRIORIDAD[p.rol] || 0) > (PRIORIDAD[previo.rol] || 0)) res.set(i, p);
+    }
+    return res;
+  }
+  function claveDibujo(p) { return p.id + ':' + simboloPersona(p) + (marcados.has(p.id) ? '*' : ''); }
+  function simboloPersona(p) {
+    const et = Sim.personajes.etapa(estado, p);
+    if (et === 'nino' || et === 'bebe') return SIMBOLO_PERSONA[et];
+    return SIMBOLO_PERSONA[p.rol] || '☺';
+  }
+
+  function prepararTexto(tc) {
+    ctx.font = Math.round(tc * 0.9) + "px 'DejaVu Sans Mono', 'Consolas', 'Courier New', monospace";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+  }
+
   function dibujar() {
     if (!ctx) return;
     ctx.fillStyle = paleta.fondo;
     ctx.fillRect(0, 0, anchoVista(), altoVista());
+    dibujados = new Map();
     if (!estado) return;
     const m = estado.mapa;
     const est = Sim.motor.calendario().estacion;
     const tc = tamCasilla();
+    prepararTexto(tc);
+    const personas = personasPorCasilla();
 
     // Solo las casillas visibles
     const x0 = Math.max(0, Math.floor(camara.x)), y0 = Math.max(0, Math.floor(camara.y));
     const x1 = Math.min(m.ancho - 1, Math.ceil(camara.x + anchoVista() / tc));
     const y1 = Math.min(m.alto - 1, Math.ceil(camara.y + altoVista() / tc));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) dibujarCasilla(x, y, est, tc, personas, false);
+  }
 
-    ctx.font = Math.round(tc * 0.9) + "px 'DejaVu Sans Mono', 'Consolas', 'Courier New', monospace";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
-        const i = y * m.ancho + x;
-        const t = m.terreno[i];
-        const px = (x - camara.x) * tc, py = (y - camara.y) * tc;
-        if (t === T.AGUA || t === T.VADO) {
-          ctx.fillStyle = paleta.fondoAgua;
-          ctx.fillRect(px, py, tc + 0.5, tc + 0.5);
-        }
-        let simbolo = SIMBOLO[t];
-        let color = paleta.terreno[t][est];
-        const ni = m.nodoPorCasilla[i];
-        if (ni >= 0) {
-          const nodo = m.nodos[ni];
-          if (SIMBOLO_RECURSO[nodo.recurso]) { simbolo = SIMBOLO_RECURSO[nodo.recurso]; color = paleta.recurso[nodo.recurso]; }
-          // El color se apaga según lo que queda en el nodo
-          const vacio = 1 - nodo.cantidad / nodo.maximo;
-          if (vacio > 0) color = mezclar(color, paleta.agotado[nodo.recurso], vacio);
-        }
-        // Algunas casillas de las zonas de caza muestran un animal
-        const ci = m.cazaPorCasilla[i];
-        if (ci >= 0 && m.nodos[ci].cantidad > 0 && hashCasilla(x, y) < Sim.config.mapa.densidadAnimales) {
-          simbolo = SIMBOLO_ANIMAL; color = paleta.animal;
-        }
-        ctx.fillStyle = color;
-        ctx.fillText(simbolo, px + tc / 2, py + tc / 2 + 1);
+  // Redibuja SOLO las casillas donde algo ha cambiado (personajes que se movieron, fichas abiertas...)
+  function actualizar(casillasExtra) {
+    if (!ctx || !estado || pendiente) return;
+    const m = estado.mapa, W = m.ancho;
+    const est = Sim.motor.calendario().estacion;
+    const tc = tamCasilla();
+    const personas = personasPorCasilla();
+    const cambiadas = new Set(casillasExtra || []);
+    for (const [i, clave] of dibujados) { const p = personas.get(i); if (!p || claveDibujo(p) !== clave) cambiadas.add(i); }
+    for (const [i, p] of personas) if (dibujados.get(i) !== claveDibujo(p)) cambiadas.add(i);
+    if (!cambiadas.size) return;
+    prepararTexto(tc);
+    for (const i of cambiadas) {
+      const x = i % W, y = (i / W) | 0;
+      if ((x + 1 - camara.x) * tc < 0 || (y + 1 - camara.y) * tc < 0 || (x - camara.x) * tc > anchoVista() || (y - camara.y) * tc > altoVista()) {
+        dibujados.delete(i);
+        if (personas.has(i)) dibujados.set(i, claveDibujo(personas.get(i)));
+        continue;
       }
+      dibujarCasilla(x, y, est, tc, personas, true);
     }
+  }
 
-    // Zonas de inicio: plano del futuro salón y el rey en el centro
-    const C = Sim.config.mapa;
-    for (const ini of m.inicios) {
-      const col = paleta.razas[ini.raza];
-      for (let y = ini.y; y < ini.y + C.altoSalon; y++) for (let x = ini.x; x < ini.x + C.anchoSalon; x++) {
-        const borde = y === ini.y || y === ini.y + C.altoSalon - 1 || x === ini.x || x === ini.x + C.anchoSalon - 1;
-        const px = (x - camara.x) * tc, py = (y - camara.y) * tc;
-        ctx.fillStyle = paleta.fondo;
-        ctx.fillRect(px, py, tc + 0.5, tc + 0.5);
-        if (borde) { ctx.fillStyle = col; ctx.globalAlpha = 0.55; ctx.fillText(SIMBOLO_PLANO, px + tc / 2, py + tc / 2 + 1); ctx.globalAlpha = 1; }
+  // Dibuja una casilla completa: fondo, terreno, plano del salón y personaje encima.
+  function dibujarCasilla(x, y, est, tc, personas, aislada) {
+    const m = estado.mapa;
+    const i = y * m.ancho + x;
+    const t = m.terreno[i];
+    const px = (x - camara.x) * tc, py = (y - camara.y) * tc;
+    if (aislada) { ctx.save(); ctx.beginPath(); ctx.rect(px, py, tc, tc); ctx.clip(); }
+    const plano = planoPorCasilla.get(i);
+    ctx.fillStyle = plano !== undefined ? paleta.fondo : (t === T.AGUA || t === T.VADO) ? paleta.fondoAgua : paleta.fondo;
+    if (aislada || plano !== undefined || t === T.AGUA || t === T.VADO) ctx.fillRect(px, py, tc + 0.5, tc + 0.5);
+
+    const p = personas.get(i);
+    if (plano !== undefined) {
+      if (plano) { ctx.fillStyle = paleta.razas[plano]; ctx.globalAlpha = 0.55; ctx.fillText(SIMBOLO_PLANO, px + tc / 2, py + tc / 2 + 1); ctx.globalAlpha = 1; }
+    } else if (!p) {
+      let simbolo = SIMBOLO[t];
+      let color = paleta.terreno[t][est];
+      const ni = m.nodoPorCasilla[i];
+      if (ni >= 0) {
+        const nodo = m.nodos[ni];
+        if (SIMBOLO_RECURSO[nodo.recurso]) { simbolo = SIMBOLO_RECURSO[nodo.recurso]; color = paleta.recurso[nodo.recurso]; }
+        // El color se apaga según lo que queda en el nodo
+        const vacio = 1 - nodo.cantidad / nodo.maximo;
+        if (vacio > 0) color = mezclar(color, paleta.agotado[nodo.recurso], vacio);
       }
-      const cx = ini.x + (C.anchoSalon >> 1), cy = ini.y + (C.altoSalon >> 1);
-      ctx.fillStyle = col;
-      ctx.fillText(SIMBOLO_REY, (cx - camara.x) * tc + tc / 2, (cy - camara.y) * tc + tc / 2 + 1);
+      // Algunas casillas de las zonas de caza muestran un animal
+      const ci = m.cazaPorCasilla[i];
+      if (ci >= 0 && m.nodos[ci].cantidad > 0 && hashCasilla(x, y) < Sim.config.mapa.densidadAnimales) {
+        simbolo = SIMBOLO_ANIMAL; color = paleta.animal;
+      }
+      ctx.fillStyle = color;
+      ctx.fillText(simbolo, px + tc / 2, py + tc / 2 + 1);
     }
+    if (p) {
+      if (marcados.has(p.id)) { ctx.strokeStyle = paleta.razas[p.raza]; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, tc - 1, tc - 1); }
+      ctx.fillStyle = paleta.razas[p.raza];
+      ctx.fillText(simboloPersona(p), px + tc / 2, py + tc / 2 + 1);
+      dibujados.set(i, claveDibujo(p));
+    } else dibujados.delete(i);
+    if (aislada) ctx.restore();
   }
 
   // Número fijo 0..1 por casilla (para decidir dónde se ve un animal)
@@ -225,12 +288,14 @@ Sim.render = (function () {
   return {
     PALETAS: PALETAS,
     SIMBOLO: SIMBOLO, SIMBOLO_RECURSO: SIMBOLO_RECURSO, SIMBOLO_ANIMAL: SIMBOLO_ANIMAL,
-    SIMBOLO_REY: SIMBOLO_REY, SIMBOLO_PLANO: SIMBOLO_PLANO,
+    SIMBOLO_REY: SIMBOLO_REY, SIMBOLO_PLANO: SIMBOLO_PLANO, SIMBOLO_PERSONA: SIMBOLO_PERSONA,
     iniciar: iniciar,
-    ponerEstado: function (e) { estado = e; encuadrar(); },
+    ponerEstado: function (e) { estado = e; prepararPlanos(); encuadrar(); },
     ponerPaleta: function (id) { paleta = PALETAS[id] || PALETAS.clasica; pedirDibujo(); },
     paleta: function () { return paleta; },
     pedirDibujo: pedirDibujo,
+    actualizar: actualizar,
+    marcar: function (ids) { marcados = new Set(ids); actualizar(); },
     encuadrar: encuadrar,
     centrar: centrar,
     mover: mover, zoom: zoom, pantallaACasilla: pantallaACasilla,
