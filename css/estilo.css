@@ -35,7 +35,7 @@ button.activo { color: var(--acento); border-color: var(--acento); }
 /* ---- Juego ---- */
 #juego { display: flex; flex-direction: column; height: 100%; }
 #barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--borde); }
-.fecha { color: var(--acento); min-width: 23ch; }
+.fecha { color: var(--acento); min-width: 36ch; white-space: nowrap; }
 #c-progreso { width: 60px; height: 6px; background: #222; border: 1px solid var(--borde); }
 #c-progreso-relleno { height: 100%; width: 0; background: var(--acento); }
 .semilla { color: var(--texto); cursor: pointer; text-decoration: underline dotted; }
@@ -50,7 +50,7 @@ button.activo { color: var(--acento); border-color: var(--acento); }
 .log { padding: 6px 8px; height: 90px; overflow-y: auto; font-size: 12px; }
 #leyenda div { margin: 2px 0; }
 .ley-simbolo { display: inline-block; width: 1.5em; text-align: center; }
-#info { padding: 4px 10px; background: var(--panel); border-top: 1px solid var(--borde); color: var(--tenue); min-height: 1.6em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#info { height: 26px; line-height: 18px; flex: none; padding: 4px 10px; background: var(--panel); border-top: 1px solid var(--borde); color: var(--tenue); min-height: 1.6em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Botón discreto "nuke the map" en la esquina */
 #nuke { margin-left: auto; position: relative; overflow: hidden; background: transparent; border-color: #2a2a2a; color: #555; font-size: 11px; padding: 2px 6px; user-select: none; }

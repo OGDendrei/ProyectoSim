@@ -92,17 +92,23 @@ Sim.render = (function () {
     lienzo = canvas;
     ctx = canvas.getContext('2d');
     // Si cambia el tamaño de la zona del mapa, se reajusta el lienzo
-    new ResizeObserver(function () { ajustarTamano(); pedirDibujo(); }).observe(canvas.parentElement);
+    // Si se redimensiona, se redibuja en el acto (sin esperar) para que no se vea el lienzo vacío
+    new ResizeObserver(function () { if (ajustarTamano()) dibujar(); }).observe(canvas.parentElement);
   }
 
+  // Ajusta el lienzo al tamaño de su zona. Solo lo toca si el tamaño cambió de verdad,
+  // porque cambiar el tamaño de un lienzo lo borra entero (eso causaba parpadeo).
   function ajustarTamano() {
     const r = lienzo.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    lienzo.width = Math.max(1, Math.floor(r.width * dpr));
-    lienzo.height = Math.max(1, Math.floor(r.height * dpr));
+    const w = Math.max(1, Math.floor(r.width * dpr)), h = Math.max(1, Math.floor(r.height * dpr));
+    if (w === lienzo.width && h === lienzo.height) return false;
+    lienzo.width = w;
+    lienzo.height = h;
     lienzo.style.width = r.width + 'px';
     lienzo.style.height = r.height + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return true;
   }
 
   function tamCasilla() { return Sim.config.render.tamanoCasilla * camara.zoom; }

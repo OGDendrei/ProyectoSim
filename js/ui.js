@@ -6,6 +6,7 @@ Sim.ui = (function () {
   let alCrear = null;      // función que main da para crear la partida
   let alNuke = null;
   let estado = null;
+  const TEXTO_INFO = 'Pasa el ratón por el mapa para ver qué hay en cada casilla.';
 
   // ---------- Menú previo ----------
   function montarMenu(opcionesPrevias) {
@@ -188,13 +189,18 @@ Sim.ui = (function () {
     window.addEventListener('mousemove', function (e) {
       if (arrastre) { Sim.render.mover(e.clientX - arrastre.x, e.clientY - arrastre.y); arrastre = { x: e.clientX, y: e.clientY }; }
     });
+    // La barra de información solo se reescribe al cambiar de casilla (no redibuja el mapa)
+    let ultimaCasilla = '';
     lienzo.addEventListener('mousemove', function (e) {
       if (!estado) return;
       const r = lienzo.getBoundingClientRect();
       const c = Sim.render.pantallaACasilla(e.clientX - r.left, e.clientY - r.top);
+      const clave = c.x + ',' + c.y;
+      if (clave === ultimaCasilla) return;
+      ultimaCasilla = clave;
       $('info').textContent = Sim.mapa.describir(estado.mapa, c.x, c.y) || ' ';
     });
-    lienzo.addEventListener('mouseleave', function () { $('info').textContent = 'Pasa el ratón por el mapa para ver qué hay en cada casilla.'; });
+    lienzo.addEventListener('mouseleave', function () { ultimaCasilla = ''; $('info').textContent = TEXTO_INFO; });
     lienzo.addEventListener('wheel', function (e) {
       e.preventDefault();
       const r = lienzo.getBoundingClientRect();

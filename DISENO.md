@@ -561,5 +561,6 @@ Todo lo marcado como `[PROPUESTO]` es ajustable. Los que más probablemente nece
 |---|---|
 | 2026-11-05 | Versión inicial del documento a partir de la sesión de diseño: concepto, mapa, razas, personajes, IA, familia y sucesión, tiempo y estaciones, recursos y nodos, edificios, combate, raids, diplomacia, interfaz, menú, hoja de ruta e ideas futuras. |
 | 2026-11-05 | Fase 1 construida. Añadidos como `[PROPUESTO]`: módulos `azar` y `config`; carga con `<script>` normales y objeto global `Sim`; símbolos de vado, metal, oro y animales; velocidad de 0,2 s, botón "+1 tick" y espacio para pausar. Las zonas de inicio muestran el plano del salón y el rey como marcador hasta la Fase 2. |
+| 2026-11-05 | Corregido parpadeo del mapa: al mover el ratón cambiaba la altura de la barra de información, eso redimensionaba el lienzo y lo borraba. Ahora la barra tiene altura fija, el lienzo solo se redimensiona si cambia de verdad y la información solo se actualiza al cambiar de casilla. |
 
 > **Al modificar el diseño:** edita la sección correspondiente, ajusta las etiquetas de estado y añade una fila aquí con la fecha y un resumen breve.
