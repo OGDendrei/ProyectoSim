@@ -33,6 +33,7 @@ Sim.ui = (function () {
 
     llenarVelocidades($('m-velocidad'), prev.msPorTick || P.velocidadPorDefecto);
     llenarPaletas($('m-paleta'), prev.paleta || P.paletaPorDefecto);
+    $('m-graficos').value = prev.graficos || P.graficosPorDefecto;
     $('m-error').textContent = '';
   }
 
@@ -73,6 +74,7 @@ Sim.ui = (function () {
       semillaEscrita: escrita,
       semilla: escrita || Sim.azar.semillaNueva(),
       paleta: $('m-paleta').value,
+      graficos: $('m-graficos').value,
     };
   }
 
@@ -91,6 +93,7 @@ Sim.ui = (function () {
     estado = e;
     llenarVelocidades($('c-velocidad'), e.tiempo.msPorTick);
     llenarPaletas($('c-paleta'), e.opciones.paleta);
+    $('c-graficos').value = e.opciones.graficos;
     $('c-semilla').textContent = e.opciones.semilla;
     montarBandos();
     montarLeyenda();
@@ -139,24 +142,30 @@ Sim.ui = (function () {
   function montarLeyenda() {
     const pal = Sim.render.paleta();
     const est = Sim.motor.calendario().estacion;
-    const T = Sim.mapa.T, S = Sim.render.SIMBOLO;
+    const T = Sim.mapa.T, S = Sim.render.SIMBOLO, M = Sim.tileset.MAPEO;
+    const conTiles = Sim.render.modo() === 'tileset';
+    const deEst = (x) => Array.isArray(x) ? x[est] : x;
+    // [símbolo ASCII, color, texto, tile (o null si se usa el ASCII también con tileset)]
     const filas = [
-      [S[T.SUELO], pal.terreno[T.SUELO][est], 'Suelo llano'],
-      [S[T.PRADERA], pal.terreno[T.PRADERA][est], 'Pradera'],
-      [S[T.BOSQUE], pal.terreno[T.BOSQUE][est], 'Bosque (madera)'],
-      [S[T.MONTANA], pal.terreno[T.MONTANA][est], 'Montaña (piedra)'],
-      [Sim.render.SIMBOLO_RECURSO.metal, pal.recurso.metal, 'Veta de metal'],
-      [Sim.render.SIMBOLO_RECURSO.oro, pal.recurso.oro, 'Oro'],
-      [S[T.AGUA], pal.terreno[T.AGUA][est], 'Agua (pesca en la orilla)'],
-      [S[T.VADO], pal.terreno[T.VADO][est], 'Vado (se puede cruzar)'],
-      [Sim.render.SIMBOLO_ANIMAL, pal.animal, 'Animales (zona de caza)'],
-      [Sim.render.SIMBOLO_PLANO, '#888', 'Plano del salón del rey'],
-      [Sim.render.SIMBOLO_PERSONA.rey, '#ddd', 'Rey o reina (color de su raza)'],
-      [Sim.render.SIMBOLO_PERSONA.guardia, '#ddd', 'Guardia'],
-      [Sim.render.SIMBOLO_PERSONA.trabajador, '#ddd', 'Trabajador'],
+      [S[T.SUELO], pal.terreno[T.SUELO][est], 'Suelo llano', deEst(M.suelo)],
+      [S[T.PRADERA], pal.terreno[T.PRADERA][est], 'Pradera', deEst(M.pradera)],
+      [S[T.BOSQUE], pal.terreno[T.BOSQUE][est], 'Bosque (madera)', deEst(M.bosque)],
+      [S[T.MONTANA], pal.terreno[T.MONTANA][est], 'Montaña (piedra)', M.montana],
+      [Sim.render.SIMBOLO_RECURSO.metal, pal.recurso.metal, 'Veta de metal', M.metal],
+      [Sim.render.SIMBOLO_RECURSO.oro, pal.recurso.oro, 'Oro', M.oro],
+      [S[T.AGUA], pal.terreno[T.AGUA][est], 'Agua (pesca en la orilla)', M.agua.centro],
+      [S[T.VADO], pal.terreno[T.VADO][est], 'Vado (se puede cruzar)', M.vado],
+      [Sim.render.SIMBOLO_ANIMAL, pal.animal, 'Animales (zona de caza)', M.animal],
+      [Sim.render.SIMBOLO_PLANO, '#888', 'Plano del salón del rey', null],
+      [Sim.render.SIMBOLO_PERSONA.rey, '#ddd', 'Rey o reina (color de su raza)', M.rey],
+      [Sim.render.SIMBOLO_PERSONA.guardia, '#ddd', 'Guardia', M.guardia],
+      [Sim.render.SIMBOLO_PERSONA.trabajador, '#ddd', 'Trabajador', M.trabajador],
     ];
-    $('leyenda').innerHTML = filas.map((f) =>
-      '<div><span class="ley-simbolo" style="color:' + f[1] + '">' + f[0] + '</span> ' + f[2] + '</div>').join('');
+    $('leyenda').innerHTML = filas.map((f) => {
+      const icono = conTiles && f[3] ? '<span class="ley-simbolo"><span style=\'' + Sim.tileset.estiloIcono(f[3], 1) + '\'></span></span>'
+        : '<span class="ley-simbolo" style="color:' + f[1] + '">' + f[0] + '</span>';
+      return '<div>' + icono + ' ' + f[2] + '</div>';
+    }).join('') + (conTiles ? '<div class="tenue" style="margin-top:6px">Tileset Ever Rogue de Efilheim, CC0</div>' : '');
   }
 
   // Refresca los indicadores (año, estación, botón de pausa)
@@ -191,6 +200,14 @@ Sim.ui = (function () {
       estado.opciones.paleta = this.value;
       Sim.render.ponerPaleta(this.value);
       montarBandos(); montarLeyenda();
+    });
+    $('c-graficos').addEventListener('change', function () {
+      const pedido = this.value, sel = this;
+      Sim.render.ponerModo(pedido, function (ok) {
+        if (!ok) { sel.value = 'ascii'; $('info').textContent = 'No se pudo cargar el tileset; se sigue en ASCII.'; }
+        estado.opciones.graficos = Sim.render.modo();
+        montarLeyenda();
+      });
     });
     $('c-encuadrar').addEventListener('click', function () { Sim.render.encuadrar(); });
     $('c-semilla').addEventListener('click', function () {

@@ -30,6 +30,10 @@ window.Sim = window.Sim || {};
     Sim.fichas.ponerEstado(estado);
     Sim.ui.ponerEstado(estado);
     Sim.render.ponerEstado(estado);
+    Sim.render.ponerModo(op.graficos, function (ok) {
+      if (!ok) estado.opciones.graficos = 'ascii';
+      Sim.ui.ponerEstado(estado); // refresca selector y leyenda
+    });
     Sim.estadoActual = estado; // útil para depurar desde la consola
   }
 

@@ -93,6 +93,10 @@ Sim.render = (function () {
   let planoPorCasilla = new Map();  // casilla → raza (borde del plano del salón)
   let dibujados = new Map();        // casilla → clave de lo que se dibujó encima (personajes)
   let marcados = new Set();         // ids de personajes con ficha abierta (se recuadran)
+  let modo = 'ascii';               // 'ascii' o 'tileset'
+  const TERRENO_TILE = {};          // tipo de terreno → clave del mapeo del tileset
+  TERRENO_TILE[T.SUELO] = 'suelo'; TERRENO_TILE[T.PRADERA] = 'pradera'; TERRENO_TILE[T.BOSQUE] = 'bosque';
+  TERRENO_TILE[T.MONTANA] = 'montana'; TERRENO_TILE[T.AGUA] = 'agua'; TERRENO_TILE[T.VADO] = 'vado';
 
   function iniciar(canvas) {
     lienzo = canvas;
@@ -113,10 +117,22 @@ Sim.render = (function () {
     lienzo.style.width = r.width + 'px';
     lienzo.style.height = r.height + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = false;
     return true;
   }
 
-  function tamCasilla() { return Sim.config.render.tamanoCasilla * camara.zoom; }
+  // Tamaño de casilla en px de pantalla. Con tileset, la escala es un número entero de píxeles reales
+  // (16, 32, 48...) para que el pixel art se vea nítido.
+  function tamCasilla() {
+    if (modo === 'tileset') return Sim.tileset.TAM * camara.zoom / (window.devicePixelRatio || 1);
+    return Sim.config.render.tamanoCasilla * camara.zoom;
+  }
+  // Posición en pantalla de una casilla, ajustada a píxeles reales en modo tileset
+  function posPantalla(x, y, tc) {
+    if (modo !== 'tileset') return { px: (x - camara.x) * tc, py: (y - camara.y) * tc };
+    const dpr = window.devicePixelRatio || 1, d = tc * dpr;
+    return { px: (Math.round(x * d) - Math.round(camara.x * d)) / dpr, py: (Math.round(y * d) - Math.round(camara.y * d)) / dpr };
+  }
   function anchoVista() { return lienzo.width / (window.devicePixelRatio || 1); }
   function altoVista() { return lienzo.height / (window.devicePixelRatio || 1); }
 
@@ -126,7 +142,11 @@ Sim.render = (function () {
     ajustarTamano();
     const m = estado.mapa, C = Sim.config.render;
     const z = Math.min(anchoVista() / (m.ancho * C.tamanoCasilla), altoVista() / (m.alto * C.tamanoCasilla));
-    camara.zoom = Math.max(C.zoomMinimo, Math.min(C.zoomMaximo, z));
+    if (modo === 'tileset') {
+      const dpr = window.devicePixelRatio || 1;
+      const k = Math.floor(Math.min(anchoVista() * dpr / (m.ancho * Sim.tileset.TAM), altoVista() * dpr / (m.alto * Sim.tileset.TAM)));
+      camara.zoom = Math.max(1, Math.min(C.escalaMaximaTileset, k));
+    } else camara.zoom = Math.max(C.zoomMinimo, Math.min(C.zoomMaximo, z));
     centrar(m.ancho / 2, m.alto / 2);
   }
   function centrar(cx, cy) {
@@ -181,6 +201,7 @@ Sim.render = (function () {
 
   function dibujar() {
     if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = paleta.fondo;
     ctx.fillRect(0, 0, anchoVista(), altoVista());
     dibujados = new Map();
@@ -226,8 +247,9 @@ Sim.render = (function () {
     const m = estado.mapa;
     const i = y * m.ancho + x;
     const t = m.terreno[i];
-    const px = (x - camara.x) * tc, py = (y - camara.y) * tc;
+    const pos = posPantalla(x, y, tc), px = pos.px, py = pos.py;
     if (aislada) { ctx.save(); ctx.beginPath(); ctx.rect(px, py, tc, tc); ctx.clip(); }
+    if (modo === 'tileset') { dibujarCasillaTile(x, y, i, t, px, py, est, tc, personas.get(i), aislada); if (aislada) ctx.restore(); return; }
     const plano = planoPorCasilla.get(i);
     ctx.fillStyle = plano !== undefined ? paleta.fondo : (t === T.AGUA || t === T.VADO) ? paleta.fondoAgua : paleta.fondo;
     if (aislada || plano !== undefined || t === T.AGUA || t === T.VADO) ctx.fillRect(px, py, tc + 0.5, tc + 0.5);
@@ -263,6 +285,79 @@ Sim.render = (function () {
     if (aislada) ctx.restore();
   }
 
+  // Versión con tileset de dibujarCasilla (mismas capas: fondo, terreno, plano, personaje)
+  function dibujarCasillaTile(x, y, i, t, px, py, est, tc, p, aislada) {
+    const m = estado.mapa, M = Sim.tileset.MAPEO;
+    const plano = planoPorCasilla.get(i);
+    if (aislada || plano !== undefined) { ctx.fillStyle = paleta.fondo; ctx.fillRect(px, py, tc, tc); }
+    const pintar = (tile, tinte, corona, escala) => {
+      const s = tc * (escala || 1);
+      ctx.drawImage(Sim.tileset.lienzoTile(tile, tinte, corona), px + (tc - s) / 2, py + (tc - s), s, s);
+    };
+    if (plano !== undefined) {
+      // SUSTITUTO: el pack no tiene "plano de obra"; se usa el símbolo ASCII
+      if (plano) { ctx.fillStyle = paleta.razas[plano]; ctx.globalAlpha = 0.55; ctx.fillText(SIMBOLO_PLANO, px + tc / 2, py + tc / 2 + 1); ctx.globalAlpha = 1; }
+    } else {
+      const clave = TERRENO_TILE[t];
+      let tile = M[clave];
+      if (clave === 'agua') tile = piezaAgua(x, y);
+      else if (Array.isArray(tile)) tile = tile[est];
+      let vacio = 0;
+      const ni = m.nodoPorCasilla[i];
+      if (ni >= 0) {
+        const nodo = m.nodos[ni];
+        if (M[nodo.recurso]) tile = M[nodo.recurso];
+        vacio = 1 - nodo.cantidad / nodo.maximo;
+      }
+      const ci = m.cazaPorCasilla[i];
+      if (!p && ci >= 0 && m.nodos[ci].cantidad > 0 && hashCasilla(x, y) < Sim.config.mapa.densidadAnimales) tile = M.animal;
+      if (p && tile === M.animal) tile = M.suelo[est];
+      pintar(tile);
+      // El tile se oscurece según lo que queda en el nodo (no hay tile de "agotado")
+      if (vacio > 0 && !p) { ctx.globalAlpha = vacio * 0.7; ctx.fillStyle = paleta.fondo; ctx.fillRect(px, py, tc, tc); ctx.globalAlpha = 1; }
+    }
+    if (p) {
+      if (marcados.has(p.id)) { ctx.strokeStyle = paleta.razas[p.raza]; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, tc - 1, tc - 1); }
+      const et = Sim.personajes.etapa(estado, p);
+      const pequeno = et === 'nino' || et === 'bebe';  // SUSTITUTO: no hay tile de niño; mitad de tamaño
+      const tile = p.rol === 'rey' ? M.rey : p.rol === 'guardia' ? M.guardia : M.trabajador;
+      pintar(tile, paleta.razas[p.raza], p.rol === 'rey', pequeno ? 0.5 : 1);
+      dibujados.set(i, claveDibujo(p));
+    } else dibujados.delete(i);
+  }
+
+  // Elige la pieza de agua según qué vecinos son tierra (bordes y esquinas)
+  function piezaAgua(x, y) {
+    const m = estado.mapa, A = Sim.tileset.MAPEO.agua;
+    const tierra = (dx, dy) => {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= m.ancho || ny >= m.alto) return false;
+      const t = m.terreno[ny * m.ancho + nx];
+      return t !== T.AGUA && t !== T.VADO;
+    };
+    const ar = tierra(0, -1), ab = tierra(0, 1), iz = tierra(-1, 0), de = tierra(1, 0);
+    if (ar && iz) return A.arribaIzq;
+    if (ar && de) return A.arribaDer;
+    if (ab && de) return A.abajoDer;
+    if (ab && iz) return A.abajoIzq;
+    if (ar) return A.arriba;
+    if (ab) return A.abajo;
+    if (iz) return A.izq;
+    if (de) return A.der;
+    return A.centro;
+  }
+
+  // Cambia entre ASCII y tileset. Si el tileset no carga, se queda en ASCII.
+  function ponerModo(nuevo, alTerminar) {
+    if (nuevo !== 'tileset') { modo = 'ascii'; camara.zoom = Math.max(camara.zoom, Sim.config.render.zoomMinimo); encuadrar(); pedirDibujo(); if (alTerminar) alTerminar(true); return; }
+    Sim.tileset.cargar(function (ok) {
+      modo = ok ? 'tileset' : 'ascii';
+      if (!ok) console.warn('No se pudo cargar el tileset; se usa ASCII.');
+      encuadrar(); pedirDibujo();
+      if (alTerminar) alTerminar(ok);
+    });
+  }
+
   // Número fijo 0..1 por casilla (para decidir dónde se ve un animal)
   function hashCasilla(x, y) {
     let h = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
@@ -275,7 +370,8 @@ Sim.render = (function () {
   function zoom(factor, pxX, pxY) {
     const C = Sim.config.render;
     const antes = pantallaACasilla(pxX, pxY, true);
-    camara.zoom = Math.max(C.zoomMinimo, Math.min(C.zoomMaximo, camara.zoom * factor));
+    if (modo === 'tileset') camara.zoom = Math.max(1, Math.min(C.escalaMaximaTileset, Math.round(camara.zoom) + (factor > 1 ? 1 : factor < 1 ? -1 : 0)));
+    else camara.zoom = Math.max(C.zoomMinimo, Math.min(C.zoomMaximo, camara.zoom * factor));
     camara.x = antes.x - pxX / tamCasilla();
     camara.y = antes.y - pxY / tamCasilla();
     pedirDibujo();
@@ -296,6 +392,8 @@ Sim.render = (function () {
     pedirDibujo: pedirDibujo,
     actualizar: actualizar,
     marcar: function (ids) { marcados = new Set(ids); actualizar(); },
+    ponerModo: ponerModo,
+    modo: function () { return modo; },
     encuadrar: encuadrar,
     centrar: centrar,
     mover: mover, zoom: zoom, pantallaACasilla: pantallaACasilla,

@@ -10,6 +10,7 @@ Sim.config = {
     ticksPorAnoPorDefecto: 100,
     velocidadPorDefecto: 60000, // ms por tick (1 minuto)
     paletaPorDefecto: 'clasica',
+    graficosPorDefecto: 'ascii',  // 'ascii' o 'tileset'
     razasPorDefecto: ['enanos', 'orcos'],
   },
 
@@ -130,6 +131,7 @@ Sim.config = {
     tamanoCasilla: 16,  // px a zoom 1
     zoomMinimo: 0.25,
     zoomMaximo: 3,
+    escalaMaximaTileset: 6,     // con tileset: aumentos enteros 1x, 2x... hasta este
   },
 
   // Botón "Nuke the map": tiempo que hay que mantenerlo pulsado

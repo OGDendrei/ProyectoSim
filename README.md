@@ -4,3 +4,5 @@ Juego de navegador en ASCII: dos razas viven solas en un mundo generado al azar 
 
 - **Diseño:** ver [DISENO.md](DISENO.md) (fuente de verdad).
 - **Jugar:** abre `index.html` en el navegador. No hace falta instalar nada.
+
+Tileset Ever Rogue de Efilheim, CC0

@@ -1,0 +1,10 @@
+Tileset Ever Rogue (versiones 1.0 y 2.0)
+Autor: Efilheim
+Licencia: CC0 1.0 Universal (dominio público)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Los ZIP originales no incluían archivo de licencia; esta nota recoge la
+licencia y el autor indicados para el pack.
+
+Uso en el juego: la versión 2.0 es la base y la 1.0 completa lo que falta.
+Se usan las hojas "Packed Alpha" (fondo transparente), con casillas de 16x16.

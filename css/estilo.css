@@ -41,7 +41,7 @@ button.activo { color: var(--acento); border-color: var(--acento); }
 .semilla { color: var(--texto); cursor: pointer; text-decoration: underline dotted; }
 #cuerpo { flex: 1; display: flex; min-height: 0; }
 #zona-mapa { flex: 1; position: relative; overflow: hidden; min-width: 0; }
-#lienzo { position: absolute; inset: 0; cursor: grab; display: block; }
+#lienzo { position: absolute; inset: 0; cursor: grab; display: block; image-rendering: pixelated; }
 #lienzo.arrastrando { cursor: grabbing; }
 #panel { width: 280px; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--borde); padding: 8px 12px; }
 #panel h2 { font-size: 13px; color: var(--tenue); text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 6px; }

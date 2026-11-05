@@ -493,7 +493,30 @@ Menú pequeño y simple con:
 
 - **ASCII estilo Dwarf Fortress (CP437)** dibujado en canvas, con **paletas de colores intercambiables** (clásica, oscura, tonos tierra...).
 - **Capa gráfica totalmente separada** (módulo `render`) para poder sustituirla por un **tileset** más adelante cambiando solo la imagen y el mapeo símbolo→tile.
-- Tilesets candidatos (libres de derechos): packs **CC0** (Kenney.nl, OpenGameArt). Los tilesets de la comunidad de Dwarf Fortress tienen licencias propias: **comprobar cada uno** antes de usarlo. `[FUTURO]`
+- Tilesets candidatos (libres de derechos): packs **CC0** (Kenney.nl, OpenGameArt). Los tilesets de la comunidad de Dwarf Fortress tienen licencias propias: **comprobar cada uno** antes de usarlo.
+
+### 18.1 Tileset Ever Rogue `[CERRADO]`
+- **Ever Rogue** de Efilheim, **CC0**, 16x16. Versión 2.0 como base y 1.0 para lo que falta. Archivos en `assets/tileset/` con su licencia.
+- Selector **"Gráficos: ASCII / Tileset"** en el menú previo (y en la barra de juego `[PROPUESTO]`). El modo ASCII se mantiene.
+- Pixel art **sin suavizado** y con **escala entera** (1x, 2x, 3x...; máximo en `config`).
+- **Colores (decidido con el usuario):** mixto. El terreno usa los colores originales del pack, con la variante de color según la estación (árbol verde → rojizo en otoño; en invierno se aclara con "escarcha"). Los personajes se tiñen con el color de su raza.
+- **Rey:** el muñeco de guardia con una **corona dorada** dibujada encima. **Niños:** el muñeco a la mitad de tamaño. **Ancianos:** igual que los adultos (decidido con el usuario, provisional).
+
+| Elemento | Tile | Nota |
+|---|---|---|
+| Suelo | 1.0 nº 14 | puntos de tierra |
+| Pradera | 2.0 nº 12 (prim./verano), 13 (otoño/invierno) | |
+| Bosque | 2.0 nº 7 (prim.), 6 (verano), 5 (otoño), 7 aclarado (invierno) | |
+| Montaña | 2.0 nº 8 | **sustituto**: bloque de piedra |
+| Agua | 1.0 nº 66-74 | centro, bordes y esquinas según la tierra vecina |
+| Vado | 1.0 nº 66 aclarado | **sustituto** |
+| Metal / oro | 1.0 nº 84 / 85 | destellos |
+| Animales (caza) | 2.0 nº 49 | |
+| Guardia / trabajador | 2.0 nº 38 / 41 | teñidos por raza |
+| Rey | 2.0 nº 38 + corona | **sustituto** |
+| Futuro: pared, puerta, campo, almacén, forja, hoguera, cadáver, lobo, bandido, monstruo | 1.0 nº 16, 143, 81, 86, 136, 126; 2.0 nº 52, 48, 39, 42 | aún no se usan |
+
+**Sin tile en el pack** (se usa sustituto provisional): montaña, vado, plano de obra (símbolo ASCII `░`), rey/corona, niño y bebé, anciano, árbol agotado/tocón (el tile se oscurece), empalizada, torre de vigilancia, cuartel, mercado, mazmorra, pesca.
 
 ---
 
@@ -572,5 +595,6 @@ Todo lo marcado como `[PROPUESTO]` es ajustable. Los que más probablemente nece
 | 2026-11-05 | Fase 1 construida. Añadidos como `[PROPUESTO]`: módulos `azar` y `config`; carga con `<script>` normales y objeto global `Sim`; símbolos de vado, metal, oro y animales; velocidad de 0,2 s, botón "+1 tick" y espacio para pausar. Las zonas de inicio muestran el plano del salón y el rey como marcador hasta la Fase 2. |
 | 2026-11-05 | Corregido parpadeo del mapa: al mover el ratón cambiaba la altura de la barra de información, eso redimensionaba el lienzo y lo borraba. Ahora la barra tiene altura fija, el lienzo solo se redimensiona si cambia de verdad y la información solo se actualiza al cambiar de casilla. |
 | 2026-11-05 | Fase 2 construida: 5 fundadores por bando con nombres por raza, rasgos, gustos, necesidades, habilidades y cuerpo; IA que puntúa acciones; rutas A* con caché; fichas flotantes (varias a la vez, arrastrables). Decidido con el usuario: 1 casilla por tick y comida sin fin en el salón hasta la Fase 3. Añadidos como `[PROPUESTO]`: módulos `rutas` y `fichas`, lista de acciones de la Fase 2, símbolos `G`/`n`/`b`, edades de fundadores. El mapa ya solo redibuja las casillas que cambian en cada tick. |
+| 2026-11-05 | Tileset Ever Rogue (Efilheim, CC0) integrado como modo gráfico alternativo al ASCII: sección 18.1 con el mapeo de tiles y la lista de elementos sin tile. Decidido con el usuario: colores mixtos (terreno original por estación, personajes teñidos por raza), corona dibujada para el rey y niños a medio tamaño. |
 
 > **Al modificar el diseño:** edita la sección correspondiente, ajusta las etiquetas de estado y añade una fila aquí con la fecha y un resumen breve.

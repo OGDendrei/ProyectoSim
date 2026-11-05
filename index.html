@@ -39,6 +39,10 @@
         <select id="m-paleta"></select>
       </label>
 
+      <label class="campo">Gráficos
+        <select id="m-graficos"><option value="ascii">ASCII</option><option value="tileset">Tileset</option></select>
+      </label>
+
       <div id="m-error" class="error"></div>
       <button id="m-crear" class="boton-principal">Crear mundo</button>
     </div>
@@ -53,6 +57,7 @@
       <button id="c-paso" title="Avanzar un tick">+1 tick</button>
       <label>Velocidad <select id="c-velocidad"></select></label>
       <label>Paleta <select id="c-paleta"></select></label>
+      <label>Gráficos <select id="c-graficos"><option value="ascii">ASCII</option><option value="tileset">Tileset</option></select></label>
       <button id="c-zoom-menos" title="Alejar">−</button>
       <button id="c-zoom-mas" title="Acercar">+</button>
       <button id="c-encuadrar" title="Ver el mapa entero">Encuadrar</button>
@@ -79,6 +84,7 @@
   <script src="js/rutas.js"></script>
   <script src="js/ia.js"></script>
   <script src="js/motor.js"></script>
+  <script src="js/tileset.js"></script>
   <script src="js/render.js"></script>
   <script src="js/fichas.js"></script>
   <script src="js/ui.js"></script>
