@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulador de Razas de Fantasía</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+  <!-- Menú previo a la partida -->
+  <div id="menu" class="pantalla">
+    <div class="menu-caja">
+      <h1>Simulador de Razas de Fantasía</h1>
+      <p class="tenue">Crea un mundo y mira cómo viven sus pueblos.</p>
+
+      <label class="campo">Tamaño del mapa (lado)
+        <input id="m-tamano" type="number" step="1" list="tamanos">
+        <datalist id="tamanos"><option value="32"><option value="64"><option value="100"><option value="128"><option value="200"></datalist>
+      </label>
+
+      <div class="campo">Razas (elige 2)
+        <div id="m-razas" class="razas"></div>
+      </div>
+
+      <label class="campo">Velocidad del tick
+        <select id="m-velocidad"></select>
+      </label>
+
+      <label class="campo">Ticks por año
+        <input id="m-tpa" type="number" min="4" step="1">
+      </label>
+
+      <label class="campo">Semilla del mapa <span class="tenue">(vacía = al azar)</span>
+        <input id="m-semilla" type="text" placeholder="p. ej. 12345 o «valle»">
+      </label>
+
+      <label class="campo">Paleta de colores
+        <select id="m-paleta"></select>
+      </label>
+
+      <div id="m-error" class="error"></div>
+      <button id="m-crear" class="boton-principal">Crear mundo</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de juego -->
+  <div id="juego" class="pantalla oculto">
+    <div id="barra">
+      <span id="c-fecha" class="fecha"></span>
+      <div id="c-progreso" title="Tiempo hasta el próximo tick"><div id="c-progreso-relleno"></div></div>
+      <button id="c-pausa" title="Tecla: espacio"></button>
+      <button id="c-paso" title="Avanzar un tick">+1 tick</button>
+      <label>Velocidad <select id="c-velocidad"></select></label>
+      <label>Paleta <select id="c-paleta"></select></label>
+      <button id="c-zoom-menos" title="Alejar">−</button>
+      <button id="c-zoom-mas" title="Acercar">+</button>
+      <button id="c-encuadrar" title="Ver el mapa entero">Encuadrar</button>
+      <span class="tenue">Semilla: <span id="c-semilla" class="semilla" title="Clic para copiar"></span></span>
+      <button id="nuke" title="Mantén pulsado 2 segundos para borrar este mundo y crear otro"><span id="nuke-relleno"></span><span class="nuke-texto">nuke the map</span></button>
+    </div>
+    <div id="cuerpo">
+      <div id="zona-mapa"><canvas id="lienzo"></canvas></div>
+      <div id="panel">
+        <h2>Bandos</h2>
+        <div id="bandos"></div>
+        <h2>Leyenda</h2>
+        <div id="leyenda"></div>
+      </div>
+    </div>
+    <div id="info">Pasa el ratón por el mapa para ver qué hay en cada casilla.</div>
+  </div>
+
+  <!-- Módulos (el orden importa) -->
+  <script src="js/config.js"></script>
+  <script src="js/azar.js"></script>
+  <script src="js/personajes.js"></script>
+  <script src="js/mapa.js"></script>
+  <script src="js/motor.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

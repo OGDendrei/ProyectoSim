@@ -102,6 +102,10 @@ Aunque al principio pueda ser un solo archivo, el código debe estar **organizad
 | `render` | **Todo el dibujo.** Aislado para poder cambiar ASCII por tileset |
 | `ui` | Menú previo, ventanas flotantes, log, paneles |
 | `guardado` | Guardar/cargar partida |
+| `azar` | Generador de números aleatorios con semilla (lo usan todos los módulos) `[PROPUESTO]` |
+| `config` | Todos los valores numéricos ajustables `[PROPUESTO]` |
+
+Los módulos se cargan con etiquetas `<script>` normales (no módulos ES) y cuelgan de un objeto global `Sim`, para que el juego funcione abriendo `index.html` con doble clic, sin servidor `[PROPUESTO]`.
 
 **Regla clave:** la **simulación** (datos y reglas) **nunca depende de cómo se dibuja**. `render` solo lee el estado y lo pinta. Esto permite cambiar a tileset sin tocar la lógica.
 
@@ -131,6 +135,10 @@ Aunque al principio pueda ser un solo archivo, el código debe estar **organizad
 | Bosque | `♣` |
 | Montaña | `▲` |
 | Agua | `≈` |
+| Vado | `≈` (color más claro) `[PROPUESTO]` |
+| Veta de metal | `*` `[PROPUESTO]` |
+| Oro | `$` `[PROPUESTO]` |
+| Animales (zona de caza) | `c` `[PROPUESTO]` |
 | Pradera | `"` |
 | Suelo | `.` |
 | Pared / puerta | `#` / `+` |
@@ -272,7 +280,7 @@ Es **rescatable** o negociable. Si **muere en cautiverio**, cuenta como muerte d
 ## 9. Tiempo y calendario `[CERRADO]`
 
 - **Tick:** unidad básica de tiempo de simulación. Cada personaje actúa **una vez por tick**.
-- **Velocidad del tick configurable:** 1 minuto (por defecto), 10 segundos, 1 segundo, etc. Incluye pausa.
+- **Velocidad del tick configurable:** 1 minuto (por defecto), 10 segundos, 1 segundo, etc. Incluye pausa. Se añade 0,2 segundos para probar rápido, un botón de avanzar un tick y la tecla espacio para pausar `[PROPUESTO]`.
 - **Ticks por año configurables** (p. ej. 100). Todas las duraciones de juego se expresan en **años del juego** y se convierten a ticks con este ajuste.
 - **Estaciones:** 4 por año, cada una un cuarto de los ticks por año.
 
@@ -552,5 +560,6 @@ Todo lo marcado como `[PROPUESTO]` es ajustable. Los que más probablemente nece
 | Fecha | Cambio |
 |---|---|
 | 2026-11-05 | Versión inicial del documento a partir de la sesión de diseño: concepto, mapa, razas, personajes, IA, familia y sucesión, tiempo y estaciones, recursos y nodos, edificios, combate, raids, diplomacia, interfaz, menú, hoja de ruta e ideas futuras. |
+| 2026-11-05 | Fase 1 construida. Añadidos como `[PROPUESTO]`: módulos `azar` y `config`; carga con `<script>` normales y objeto global `Sim`; símbolos de vado, metal, oro y animales; velocidad de 0,2 s, botón "+1 tick" y espacio para pausar. Las zonas de inicio muestran el plano del salón y el rey como marcador hasta la Fase 2. |
 
 > **Al modificar el diseño:** edita la sección correspondiente, ajusta las etiquetas de estado y añade una fila aquí con la fecha y un resumen breve.
